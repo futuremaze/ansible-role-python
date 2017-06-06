@@ -25,10 +25,18 @@
     group: root
     mode: 0644
 
+- name: Allow user env.
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    backrefs: yes
+    regexp: '^Defaults(.*secure_path=.*$)'
+    line: '# Defaults\1'
+
 - name: Copy sudoers settings.
   copy:
     src: sudoers_pyenv
-    dest: /etc/sudoers.d/
+    dest: /etc/sudoers.d/pyenv
     owner: root
     group: root
     mode: 0440
@@ -46,10 +54,17 @@
   debug:
     var: python_pyenv_versions_register.stdout
 
-# Install python
-- name: Install python
+# Install python.
+- name: Install python.
   shell: "/usr/local/pyenv/bin/pyenv install -v {{ python_version }}"
   when: python_pyenv_versions_register.stdout.find("{{ python_version }}") == -1
 
 - name: Update global python version.
   shell: "/usr/local/pyenv/bin/pyenv global {{ python_version }}"
+
+# Install python modules.
+- name: Install python modules.
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items: python_pip_module
