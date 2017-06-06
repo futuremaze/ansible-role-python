@@ -1,0 +1,55 @@
+---
+- include: "{{ ansible_os_family }}.yml"
+
+# Install pyenv.
+- name: Git clone pyenv.
+  git:
+    repo: https://github.com/yyuu/pyenv.git
+    dest: "{{ python_pyenv_dir }}/pyenv"
+
+- name: Create dir.
+  file:
+    path: "{{ python_pyenv_dir }}/pyenv/{{ item }}"
+    owner: root
+    group: root
+    state: directory
+  with_items:
+    - versions
+    - shims
+
+- name: Copy pyenv.sh.
+  copy:
+    src: pyenv.sh
+    dest: /etc/profile.d/
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Copy sudoers settings.
+  copy:
+    src: sudoers_pyenv
+    dest: /etc/sudoers.d/
+    owner: root
+    group: root
+    mode: 0440
+
+- name: Apply pyenv.sh
+  shell: sh /etc/profile.d/pyenv.sh
+  # when: XXXX
+
+- name: Get stdout of pyenv versions.
+  shell: "/usr/local/pyenv/bin/pyenv versions"
+  register: python_pyenv_versions_register
+  changed_when: false
+
+- name: Show python_pyenv_versions_register.stdout
+  debug:
+    var: python_pyenv_versions_register.stdout
+
+# Install python
+- name: Install python
+  shell: "/usr/local/pyenv/bin/pyenv install -v {{ python_version }}"
+  when: python_pyenv_versions_register.stdout.find("{{ python_version }}") == -1
+
+- name: Update global python version.
+  shell: "/usr/local/pyenv/bin/pyenv global {{ python_version }}"
