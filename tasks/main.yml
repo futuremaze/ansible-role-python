@@ -78,10 +78,21 @@
   debug:
     var: python_pip_path_register.stdout
 
-- name: Install python modules.
+- name: Install python modules(version spec).
   environment:
     PATH: "{{ python_pip_path_register.stdout | regex_replace('^(.*/).*$', '\\1') }}:{{ ansible_env.PATH }}"
   pip:
-    name: "{{ item }}"
+    name: "{{ item.name }}"
     state: present
+    version: "{{ item.version }}"
   with_items: "{{ python_pip_module }}"
+  when: item.version is defined
+
+- name: Install python modules(latest).
+  environment:
+    PATH: "{{ python_pip_path_register.stdout | regex_replace('^(.*/).*$', '\\1') }}:{{ ansible_env.PATH }}"
+  pip:
+    name: "{{ item.name }}"
+    state: latest
+  with_items: "{{ python_pip_module }}"
+  when: item.version is not defined
