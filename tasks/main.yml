@@ -41,12 +41,8 @@
     group: root
     mode: 0440
 
-- name: Apply pyenv.sh
-  shell: sh /etc/profile.d/pyenv.sh
-  # when: XXXX
-
 - name: Get stdout of pyenv versions.
-  shell: "/usr/local/pyenv/bin/pyenv versions"
+  shell: ". /etc/profile.d/pyenv.sh; pyenv versions"
   register: python_pyenv_versions_register
   changed_when: false
 
@@ -56,15 +52,25 @@
 
 # Install python.
 - name: Install python.
-  shell: "/usr/local/pyenv/bin/pyenv install -v {{ python_version }}"
-  when: python_pyenv_versions_register.stdout.find("{{ python_version }}") == -1
+  shell: ". /etc/profile.d/pyenv.sh; pyenv install -v {{ python_version }}"
+  when: python_pyenv_versions_register.stdout.find( python_version ) == -1
+
+- name: Get stdout of python version.
+  shell: ". /etc/profile.d/pyenv.sh; python --version"
+  register: python_current_version_register
+  changed_when: false
+
+- name: Show python_current_version_register.stdout
+  debug:
+    var: python_current_version_register.stdout
 
 - name: Update global python version.
-  shell: "/usr/local/pyenv/bin/pyenv global {{ python_version }}"
+  shell: ". /etc/profile.d/pyenv.sh; pyenv global {{ python_version }}"
+  when: python_current_version_register.stdout.find( python_version ) == -1
 
 # Install python modules.
 - name: Install python modules.
   pip:
     name: "{{ item }}"
     state: present
-  with_items: python_pip_module
+  with_items: "{{ python_pip_module }}"
