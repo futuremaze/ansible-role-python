@@ -69,7 +69,18 @@
   when: python_current_version_register.stdout.find( python_version ) == -1
 
 # Install python modules.
+- name: Get pip path.
+  shell: ". /etc/profile.d/pyenv.sh; which pip"
+  register: python_pip_path_register
+  changed_when: false
+
+- name: Show python_pip_path_register.
+  debug:
+    var: python_pip_path_register.stdout
+
 - name: Install python modules.
+  environment:
+    PATH: "{{ python_pip_path_register.stdout | regex_replace('^(.*/).*$', '\\1') }}:{{ ansible_env.PATH }}"
   pip:
     name: "{{ item }}"
     state: present
